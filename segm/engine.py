@@ -16,6 +16,7 @@ def train_one_epoch(
     epoch,
     amp_autocast,
     loss_scaler,
+    use_gate = True,
 ):
     criterion = torch.nn.CrossEntropyLoss(ignore_index=IGNORE_LABEL)
     logger = MetricLogger(delimiter="  ")
@@ -30,7 +31,7 @@ def train_one_epoch(
         seg_gt = batch["segmentation"].long().to(ptu.device)
 
         with amp_autocast():
-            seg_pred = model.forward(im)
+            seg_pred = model.forward(im, use_gate = use_gate)
             loss = criterion(seg_pred, seg_gt)
 
         loss_value = loss.item()
@@ -71,6 +72,7 @@ def evaluate(
     window_size,
     window_stride,
     amp_autocast,
+    use_gate = True,
 ):
     model_without_ddp = model
     if hasattr(model, "module"):
@@ -97,6 +99,7 @@ def evaluate(
                 window_size,
                 window_stride,
                 batch_size=1,
+                use_gate = use_gate
             )
             seg_pred = seg_pred.argmax(0)
 

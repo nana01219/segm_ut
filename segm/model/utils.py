@@ -156,6 +156,7 @@ def inference(
     window_size,
     window_stride,
     batch_size,
+    use_gate = True,
 ):
     C = model.n_cls
     seg_map = torch.zeros((C, ori_shape[0], ori_shape[1]), device=ptu.device)
@@ -170,7 +171,7 @@ def inference(
         seg_maps = torch.zeros((B, C, window_size, window_size), device=im.device)
         with torch.no_grad():
             for i in range(0, B, WB):
-                seg_maps[i : i + WB] = model.forward(crops[i : i + WB])
+                seg_maps[i : i + WB] = model.forward(crops[i : i + WB], use_gate = use_gate)
         windows["seg_maps"] = seg_maps
         im_seg_map = merge_windows(windows, window_size, ori_shape)
         seg_map += im_seg_map

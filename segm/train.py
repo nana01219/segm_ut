@@ -44,6 +44,7 @@ from segm.engine import train_one_epoch, evaluate
 @click.option("--normalization", default=None, type=str)
 @click.option("--eval-freq", default=None, type=int)
 @click.option("--ut", default=None, type=int)
+@click.option("--ug", default=0, type=int)
 @click.option("--ft", default=-1, type=int)
 @click.option("--ck", default="", type=str)
 @click.option("--amp/--no-amp", default=False, is_flag=True)
@@ -69,6 +70,7 @@ def main(
     normalization,
     eval_freq,
     ut,
+    ug,
     ft,
     ck,
     amp,
@@ -197,6 +199,8 @@ def main(
     # input()
     model.to(ptu.device)
 
+
+
     # load the pre-trained MASKtransformer and fix the parameters
     if ft == 1:      
         model_dict = model.state_dict()
@@ -283,8 +287,10 @@ def main(
     print(f"Encoder parameters: {num_params(model_without_ddp.encoder)}")
     print(f"Decoder parameters: {num_params(model_without_ddp.decoder)}")
 
+    use_gate = False
+ 
     for epoch in range(start_epoch, num_epochs):
-        if ft == 2:
+        """if ft == 2:
             if epoch > 24:
                 for name, param in model.named_parameters():
                     if "uncertainty" in name:
@@ -300,9 +306,14 @@ def main(
                 for name, param in model.named_parameters():
                     if "uncertainty" in name:
                         param.requires_grad = False
-                        print("******Uncertainty layer now requires_grad = False")
-                    
-
+                        print("******Uncertainty layer now requires_grad = False")"""
+        if ug == 0:
+            use_gate = False
+        elif ug > 0:
+            if epoch > ug:
+                use_gate = True 
+                print("******* Now notice that use_gate=True")
+        
         # train for one epoch
         train_logger = train_one_epoch(
             model,
@@ -312,6 +323,7 @@ def main(
             epoch,
             amp_autocast,
             loss_scaler,
+            use_gate = use_gate,
         )
 
         # save checkpoint
@@ -338,6 +350,7 @@ def main(
                 window_size,
                 window_stride,
                 amp_autocast,
+                use_gate = True,
             )
             print(f"Stats [{epoch}]:", eval_logger, flush=True)
             print("")
