@@ -61,7 +61,7 @@ class Attention(nn.Module):
         return self
 
     def norm_uncertainty(self, uncertainty):
-        uncertainty = torch.log(torch.exp(uncertainty))
+        # uncertainty = torch.log(torch.exp(uncertainty))
         uncertainty = (torch.tanh(uncertainty) + 1)/2
         return uncertainty
 
@@ -122,19 +122,22 @@ class Attention_data(nn.Module):
         self.data_uncertainty = nn.Conv2d(heads, heads, kernel_size = 1, stride=1)
         self.repeat_num = repeat_num
 
+        self.act = nn.Sigmoid()
+
         if repeat_num is not None:
             print("UNCERTAINTY: The uncertainty block will process for ", repeat_num, " times")
 
     def norm_uncertainty(self, uncertainty):
-        uncertainty = torch.log(torch.exp(uncertainty))
-        uncertainty = (torch.tanh(uncertainty) + 1)/2
+        # uncertainty = torch.log(torch.exp(uncertainty))
+        # uncertainty = (torch.tanh(uncertainty) + 1)/2
+        uncertainty = self.act(uncertainty)
         return uncertainty
 
     @property
     def unwrapped(self):
         return self
 
-    def forward(self, x, mask=None):
+    def forward(self, x, mask=None, use_gate = False):
         B, N, C = x.shape
         qkv = (
             self.qkv(x)
@@ -177,16 +180,20 @@ class Attention_data(nn.Module):
 
 
         else:
-            uncertainty = self.data_uncertainty(qk)
-            uncertainty = self.norm_uncertainty(uncertainty)
-            a, b, c, d = uncertainty.shape
-            r = torch.rand([a, b, c, d]).to(uncertainty)
-            mask = (r>uncertainty)
-
             attn = qk * self.scale
             attn = attn.softmax(dim=-1)
             attn = self.attn_drop(attn)
-            attn = attn*mask
+
+            uncertainty = self.data_uncertainty(qk)   # -inf, inf
+            uncertainty = self.norm_uncertainty(uncertainty)  # 0, 1
+
+            if use_gate:
+                a, b, c, d = uncertainty.shape
+                r = torch.rand([a, b, c, d]).to(uncertainty)
+                mask = (r>uncertainty)
+                attn = attn*mask
+            else:
+                attn = attn*uncertainty
 
             x = (attn @ v).transpose(1, 2).reshape(B, N, C)
             x = self.proj(x)
@@ -213,7 +220,7 @@ class Attention_Stage_2(nn.Module):
             print("UNCERTAINTY: The uncertainty block will process for ", repeat_num, " times")
 
     def norm_uncertainty(self, uncertainty):
-        uncertainty = torch.log(torch.exp(uncertainty))
+        # uncertainty = torch.log(torch.exp(uncertainty))
         uncertainty = (torch.tanh(uncertainty) + 1)/2
         return uncertainty
 
@@ -321,7 +328,7 @@ class Block_data(nn.Module):
         self.mlp = FeedForward(dim, mlp_dim, dropout)
         self.drop_path = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
 
-    def forward(self, x, mask=None, return_attention=False):
+    def forward(self, x, mask=None, return_attention=False, use_gate = True):
         if self.repeat_num is not None:
             y_list, attn_list = self.attn(self.norm1(x), mask)
             if return_attention:
@@ -334,7 +341,7 @@ class Block_data(nn.Module):
             return x_list
 
         else:
-            y, attn = self.attn(self.norm1(x), mask)
+            y, attn = self.attn(self.norm1(x), mask, use_gate = use_gate)
             if return_attention:
                 return attn
             x = x + self.drop_path(y)

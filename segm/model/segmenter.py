@@ -31,12 +31,12 @@ class Segmenter(nn.Module):
         )
         return nwd_params
 
-    def forward(self, im):
+    def forward(self, im, use_gate = True):
         H_ori, W_ori = im.size(2), im.size(3)
         im = padding(im, self.patch_size)
         H, W = im.size(2), im.size(3)
 
-        x = self.encoder(im, return_features=True)
+        x = self.encoder(im, return_features=True, use_gate = use_gate)
         # print(type(x))
         
 

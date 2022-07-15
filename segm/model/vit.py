@@ -262,7 +262,7 @@ class VisionTransformer_uncertainty(nn.Module):
     def load_pretrained(self, checkpoint_path, prefix=""):
         _load_weights(self, checkpoint_path, prefix)
 
-    def forward(self, im, return_features=False):
+    def forward(self, im, return_features=False, use_gate = True):
         B, _, H, W = im.shape
         PS = self.patch_size
 
@@ -289,7 +289,7 @@ class VisionTransformer_uncertainty(nn.Module):
         for blk in self.blocks:
             x = blk(x)
         for blk2 in self.block_data:
-            x = blk2(x)
+            x = blk2(x, use_gate = use_gate)
 
         x = self.norm(x)
 
