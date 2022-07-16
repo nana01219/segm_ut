@@ -202,7 +202,7 @@ def main(
 
 
     # load the pre-trained MASKtransformer and fix the parameters
-    if ft == 1:      
+    if ft == -2:      
         model_dict = model.state_dict()
         checkpoint = torch.load(ck, map_location=ptu.device)['model']
         for k, v in checkpoint.items():
@@ -313,6 +313,14 @@ def main(
             if epoch > ug:
                 use_gate = True 
                 print("******* Now notice that use_gate=True")
+
+        if ft > 0:
+            if epoch > ft:
+                for name, param in model.named_parameters():
+                    if "uncertainty" in name:
+                        param.requires_grad = False
+                        print("******Uncertainty layer now requires_grad = False")
+
         
         # train for one epoch
         train_logger = train_one_epoch(

@@ -35,7 +35,6 @@ class FeedForward(nn.Module):
         x = self.drop(x)
         return x
 
-
 class Attention(nn.Module):
     def __init__(self, dim, heads, dropout, with_ut = False):
         super().__init__()
@@ -65,7 +64,7 @@ class Attention(nn.Module):
         uncertainty = (torch.tanh(uncertainty) + 1)/2
         return uncertainty
 
-    def forward(self, x, mask=None):
+    def forward(self, x, mask=None, use_gate = None):
         B, N, C = x.shape
         qkv = (
             self.qkv(x)
@@ -310,7 +309,7 @@ class Block(nn.Module):
         self.mlp = FeedForward(dim, mlp_dim, dropout)
         self.drop_path = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
 
-    def forward(self, x, mask=None, return_attention=False):
+    def forward(self, x, mask=None, return_attention=False, use_gate = None):
         y, attn = self.attn(self.norm1(x), mask)
         if return_attention:
             return attn
