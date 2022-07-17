@@ -107,7 +107,7 @@ class Attention(nn.Module):
             return x, attn
 
 class Attention_data(nn.Module):
-    def __init__(self, dim, heads, dropout, repeat_num):
+    def __init__(self, dim, heads, dropout, repeat_num, act = "sigmoid"):
         super().__init__()
         self.heads = heads
         head_dim = dim // heads
@@ -121,7 +121,9 @@ class Attention_data(nn.Module):
         self.data_uncertainty = nn.Conv2d(heads, heads, kernel_size = 1, stride=1)
         self.repeat_num = repeat_num
 
-        self.act = nn.Sigmoid()
+        if act == "sigmoid":
+            self.act = nn.Sigmoid()
+        # elif act == "logexp":
 
         if repeat_num is not None:
             print("UNCERTAINTY: The uncertainty block will process for ", repeat_num, " times")
@@ -192,7 +194,9 @@ class Attention_data(nn.Module):
                 mask = (r>uncertainty)
                 attn = attn*mask
             else:
-                attn = attn*uncertainty
+                # attn = attn*uncertainty
+                r = torch.randn_like(uncertainty).to(uncertainty)
+                attn = attn + uncertainty*r
 
             x = (attn @ v).transpose(1, 2).reshape(B, N, C)
             x = self.proj(x)
