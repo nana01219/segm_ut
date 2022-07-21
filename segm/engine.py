@@ -72,7 +72,7 @@ def evaluate(
     window_size,
     window_stride,
     amp_autocast,
-    use_gate = True,
+    use_gate,
 ):
     model_without_ddp = model
     if hasattr(model, "module"):

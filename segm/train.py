@@ -358,7 +358,7 @@ def main(
                 window_size,
                 window_stride,
                 amp_autocast,
-                use_gate = True,
+                use_gate = use_gate,
             )
             print(f"Stats [{epoch}]:", eval_logger, flush=True)
             print("")

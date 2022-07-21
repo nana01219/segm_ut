@@ -56,7 +56,7 @@ def save_im(save_dir, save_name, im, seg_pred, seg_gt, colors, blend, normalizat
 
 
 def process_batch(
-    model, batch, window_size, window_stride, window_batch_size,
+    model, batch, window_size, window_stride, window_batch_size, ut, ug
 ):
     ims = batch["im"]
     ims_metas = batch["im_metas"]
@@ -67,19 +67,45 @@ def process_batch(
     model_without_ddp = model
     if ptu.distributed:
         model_without_ddp = model.module
-    seg_pred = inference(
-        model_without_ddp,
-        ims,
-        ims_metas,
-        ori_shape,
-        window_size,
-        window_stride,
-        window_batch_size,
-    )
-    seg_pred = seg_pred.argmax(0)
+
+    if ut>0:
+        # p_list = []
+        for k in range(ut):
+            seg_pred = inference(
+                model_without_ddp,
+                ims,
+                ims_metas,
+                ori_shape,
+                window_size,
+                window_stride,
+                window_batch_size,
+                use_gate = ug,
+            )
+            if k == 0:
+                m_results = seg_pred/ut
+            else:
+                m_results = m_results + seg_pred/ut
+        m_results = m_results.argmax(0)
+
+    else :
+            seg_pred = inference(
+                model_without_ddp,
+                ims,
+                ims_metas,
+                ori_shape,
+                window_size,
+                window_stride,
+                window_batch_size,
+            )
+            m_results = seg_pred.argmax(0)
+            # print(m_results)
+            # input()
+
+
+    # print("seg_pred", seg_pred.shape)
     im = F.interpolate(ims[-1], ori_shape, mode="bilinear")
 
-    return filename, im.cpu(), seg_pred.cpu()
+    return filename, im.cpu(), m_results.cpu()
 
 
 def eval_dataset(
@@ -93,6 +119,8 @@ def eval_dataset(
     save_images,
     frac_dataset,
     dataset_kwargs,
+    ut,
+    ug,
 ):
     db = create_dataset(dataset_kwargs)
     normalization = db.dataset.normalization
@@ -102,6 +130,8 @@ def eval_dataset(
     n_cls = db.unwrapped.n_cls
     if multiscale:
         db.dataset.set_multiscale_mode()
+
+    print("***eval use 0-1 gate = ", ug)
 
     logger = MetricLogger(delimiter="  ")
     header = ""
@@ -113,7 +143,7 @@ def eval_dataset(
     for batch in logger.log_every(db, print_freq, header):
         colors = batch["colors"]
         filename, im, seg_pred = process_batch(
-            model, batch, window_size, window_stride, window_batch_size,
+            model, batch, window_size, window_stride, window_batch_size, ut, ug
         )
         ims[filename] = im
         seg_pred_maps[filename] = seg_pred
@@ -195,7 +225,7 @@ def eval_dataset(
 @click.option("--window-batch-size", default=4, type=int)
 @click.option("--save-images/--no-save-images", default=False, is_flag=True)
 @click.option("-frac-dataset", "--frac-dataset", default=1.0, type=float)
-@click.option("-ut", default=0, type=int)
+@click.option("--ut", default=0, type=int)
 def main(
     model_path,
     dataset_name,
@@ -207,7 +237,7 @@ def main(
     window_batch_size,
     save_images,
     frac_dataset,
-    ut
+    ut,
 ):
 
     model_dir = Path(model_path).parent
@@ -216,7 +246,7 @@ def main(
     ptu.set_gpu_mode(True)
     distributed.init_process()
 
-    model, variant = load_model(model_path)
+    model, variant = load_model(model_path, ut =1)
     patch_size = model.patch_size
     model.eval()
     model.to(ptu.device)
@@ -245,7 +275,7 @@ def main(
         crop=False,
         rep_aug=False,
     )
-
+    
     eval_dataset(
         model,
         multiscale,
@@ -257,6 +287,7 @@ def main(
         save_images,
         frac_dataset,
         dataset_kwargs,
+        ut,
     )
 
     distributed.barrier()
