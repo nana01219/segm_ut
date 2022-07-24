@@ -40,7 +40,7 @@ def load_part(model_dict, checkpoint, part):
         return model_dict
     elif part == "uncertainty":
         for k, v in checkpoint.items():
-            if "uncertainty" in k:
+            if "block_data" in k:
                 print("Reserve:", k)
             else:
                 model_dict[k] = checkpoint[k]
@@ -345,14 +345,9 @@ def main(
                 model_dict = load_part(model_dict, random_dict, "uncertainty")
                 model.load_state_dict(model_dict)
                 for name, param in model.named_parameters():
-                    if "uncertainty" in name:
-                        param.requires_grad = False
-                    else:
-                        param.requires_grad = True
+                    param.requires_grad = True
                 # print("***")
 
-
-        
         # train for one epoch
         train_logger = train_one_epoch(
             model,

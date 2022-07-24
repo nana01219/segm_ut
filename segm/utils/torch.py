@@ -4,12 +4,11 @@ import torch
 
 """
 GPU wrappers
-CUDA_VISIBLE_DEVICES=0 python -m segm.train --log-dir uncertainty_tiny_mask --dataset ade20k   --backbone uncertainty_vit_tiny_patch16_384 --decoder mask_transformer --ut 1
-CUDA_VISIBLE_DEVICES=1 python -m segm.train --log-dir compare_tiny_vit --dataset ade20k   --backbone compare_vit_tiny_patch16_384 --decoder mask_transformer --ut 0
-CUDA_VISIBLE_DEVICES=1 python -m segm.train --log-dir abcde --dataset ade20k   --backbone vit_tiny_patch16_384 --decoder mask_transformer --ut 0
-CUDA_VISIBLE_DEVICES=0,1 python -m segm.train --log-dir pre-tiny_vit_8 --dataset ade20k   --backbone vit_tiny_patch16_384 --decoder mask_transformer --ut 0
+
 CUDA_VISIBLE_DEVICES=3 python -m segm.train --log-dir test --dataset ade20k   --backbone vit_tiny_patch16_384 --decoder mask_transformer --ut 1
-CUDA_VISIBLE_DEVICES=2 python -m segm.train --log-dir test --dataset ade20k   --backbone vit_base_patch16_384 --decoder mask_transformer --ut 1 --ft 1 --ck ./B_16.pth
+CUDA_VISIBLE_DEVICES=3 python -m segm.train --log-dir test --dataset ade20k   --backbone vit_base_patch16_384 --decoder mask_transformer --ut -0 --ft 1 --ck ./B_16.pth --sp_one no_relation
+CUDA_VISIBLE_DEVICES=3 python -m segm.train --log-dir tiny_ug0_ft24_pe24  --dataset ade20k   \
+    --backbone vit_tiny_patch16_384 --decoder mask_transformer --ut 1  --ft 24 --pre_ck ./Tiny_16.pth --pre_epoch 24
 """
 
 use_gpu = False
@@ -17,8 +16,8 @@ gpu_id = 0
 device = None
 
 distributed = False
-dist_rank = 0
-world_size = 1
+dist_rank = 1
+world_size = 2
 
 
 def set_gpu_mode(mode):
@@ -28,9 +27,9 @@ def set_gpu_mode(mode):
     global distributed
     global dist_rank
     global world_size
-    gpu_id = int(os.environ.get("SLURM_LOCALID", 0))
-    dist_rank = int(os.environ.get("SLURM_PROCID", 0))
-    world_size = int(os.environ.get("SLURM_NTASKS", 1))
+    # gpu_id = int(os.environ.get("SLURM_LOCALID", 0))
+    # dist_rank = int(os.environ.get("SLURM_PROCID", 0))
+    # world_size = int(os.environ.get("SLURM_NTASKS", 1))
 
     distributed = world_size > 1
     use_gpu = mode
