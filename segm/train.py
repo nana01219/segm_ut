@@ -40,10 +40,18 @@ def load_part(model_dict, checkpoint, part):
         return model_dict
     elif part == "uncertainty":
         for k, v in checkpoint.items():
-            if "block_data" in k:
-                print("Reserve:", k)
+            flag = False
+            for ss in  model_dict.keys():
+                if k in ss:
+                    if "block_data" in k:
+                        flag = True
+                        break  
+                    else:
+                        break               
+            if flag:
+                print("Reserve:", ss, k)
             else:
-                model_dict[k] = checkpoint[k]
+                model_dict[ss] = checkpoint[k]
         return model_dict
     else:
         raise Exception("Uncertainty: Model do not have such parts")
@@ -343,6 +351,10 @@ def main(
             if epoch == pre_epoch:
                 model_dict = model.state_dict()
                 model_dict = load_part(model_dict, random_dict, "uncertainty")
+                # for k, v in model_dict.items():
+                #     print("dict:", k)
+                # for name, param in model.named_parameters():
+                #     print("model-", name)
                 model.load_state_dict(model_dict)
                 for name, param in model.named_parameters():
                     param.requires_grad = True
