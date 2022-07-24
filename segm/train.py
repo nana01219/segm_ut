@@ -23,6 +23,31 @@ from contextlib import suppress
 from segm.utils.distributed import sync_model
 from segm.engine import train_one_epoch, evaluate
 
+def load_part(model_dict, checkpoint, part):
+    if part == "backbone":
+        for k, v in checkpoint.items():
+            print("the k", k)
+            flag = False
+            for ss in  model_dict.keys():            
+                if k == ss:
+                    print("MATCH:", k)
+                    flag = True
+                    break
+                else:
+                    continue
+            if flag:
+                model_dict[ss] = checkpoint[k]
+        return model_dict
+    elif part == "uncertainty":
+        for k, v in checkpoint.items():
+            if "uncertainty" in k:
+                print("Reserve:", k)
+            else:
+                model_dict[k] = checkpoint[k]
+        return model_dict
+    else:
+        raise Exception("Uncertainty: Model do not have such parts")
+
 
 @click.command(help="")
 @click.option("--log-dir", type=str, help="logging directory")
@@ -43,12 +68,14 @@ from segm.engine import train_one_epoch, evaluate
 @click.option("-lr", "--learning-rate", default=None, type=float)
 @click.option("--normalization", default=None, type=str)
 @click.option("--eval-freq", default=None, type=int)
-@click.option("--ut", default=None, type=int)
-@click.option("--ug", default=0, type=int)
-@click.option("--ft", default=-1, type=int)
-@click.option("--ck", default="", type=str)
+@click.option("--ut", default=None, type=int, help="-1 each 0 no uncertainty 1 uncertainty >1 repeat number")
+@click.option("--ug", default=0, type=int, help="if >0, from epoch ug the model will use 0-1 gate; but ug = 0 always don't use")
+@click.option("--ft", default=-1, type=int, help="if >0, from epoch ft the model will fix uncertainty module")
+@click.option("--pre_ck", default=None, type=str)
+@click.option("--pre_epoch", default=0, type=int)
 @click.option("--amp/--no-amp", default=False, is_flag=True)
 @click.option("--resume/--no-resume", default=True, is_flag=True)
+                
 
 def main(
     log_dir,
@@ -72,7 +99,8 @@ def main(
     ut,
     ug,
     ft,
-    ck,
+    pre_ck,
+    pre_epoch,
     amp,
     resume,
 ):
@@ -200,33 +228,21 @@ def main(
     model.to(ptu.device)
 
 
-
     # load the pre-trained MASKtransformer and fix the parameters
-    if ft == -2:      
+    if pre_ck is not None:  
+        assert (pre_epoch > 0)  & (pre_epoch >= ft)
         model_dict = model.state_dict()
-        checkpoint = torch.load(ck, map_location=ptu.device)['model']
-        for k, v in checkpoint.items():
-            print("the k", k)
-            flag = False
-            for ss in  model_dict.keys():
-                
-                if k == ss:
-                    print("MATCH:", k)
-                    flag = True
-                    break
-                else:
-                    continue
-            if flag:
-                model_dict[ss] = checkpoint[k]
+        random_dict = model.state_dict()
+        checkpoint_mask = torch.load(pre_ck, map_location=ptu.device)['model']
 
+        model_dict = load_part(model_dict, checkpoint_mask, "backbone")
         model.load_state_dict(model_dict)
         for name, param in model.named_parameters():
-            if "uncertainty" in name:
+            if "block_data" in name:
                 param.requires_grad = True
             else:
                 param.requires_grad = False
-    
-
+        
 
     # optimizer
     optimizer_kwargs = variant["optimizer_kwargs"]
@@ -320,6 +336,21 @@ def main(
                     if "uncertainty" in name:
                         param.requires_grad = False
                         print("******Uncertainty layer now requires_grad = False")
+                    else:
+                        param.requires_grad = True
+
+        if pre_epoch > 0:
+            if epoch == pre_epoch:
+                model_dict = model.state_dict()
+                model_dict = load_part(model_dict, random_dict, "uncertainty")
+                model.load_state_dict(model_dict)
+                for name, param in model.named_parameters():
+                    if "uncertainty" in name:
+                        param.requires_grad = False
+                    else:
+                        param.requires_grad = True
+                # print("***")
+
 
         
         # train for one epoch

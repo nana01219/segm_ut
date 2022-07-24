@@ -96,6 +96,7 @@ def process_batch(
                 window_size,
                 window_stride,
                 window_batch_size,
+                use_gate = ug
             )
             m_results = seg_pred.argmax(0)
             # print(m_results)
@@ -226,6 +227,8 @@ def eval_dataset(
 @click.option("--save-images/--no-save-images", default=False, is_flag=True)
 @click.option("-frac-dataset", "--frac-dataset", default=1.0, type=float)
 @click.option("--ut", default=0, type=int)
+@click.option("--ug/--not-ug", default=True, is_flag=True)
+
 def main(
     model_path,
     dataset_name,
@@ -238,6 +241,7 @@ def main(
     save_images,
     frac_dataset,
     ut,
+    ug,
 ):
 
     model_dir = Path(model_path).parent
@@ -288,6 +292,7 @@ def main(
         frac_dataset,
         dataset_kwargs,
         ut,
+        ug,
     )
 
     distributed.barrier()
