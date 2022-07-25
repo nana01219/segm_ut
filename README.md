@@ -23,4 +23,4 @@ CUDA_VISIBLE_DEVICES=3 python -m segm.train --log-dir base_ug24_ft24_pe24  --dat
 采用上述思路，在24epoch后，不启用0-1gate
 下面的./Base_16.pth是预训练模型的位置，需要对应修改
 
-CUDA_VISIBLE_DEVICES=3 python -m segm.train --log-dir base_ug0_ft24_pe24  --dataset ade20k   --backbone vit_base_patch16_384 --decoder mask_transformer --ut 1 --ft 24 --pre_ck ./Base_16.pth --pre_epoch 24 
+CUDA_VISIBLE_DEVICES=4 python -m segm.train --log-dir base_ug0_ft24_pe24  --dataset ade20k   --backbone vit_base_patch16_384 --decoder mask_transformer --ut 1 --ft 24 --pre_ck ./Base_16.pth --pre_epoch 24 
