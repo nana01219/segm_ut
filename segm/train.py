@@ -253,8 +253,11 @@ def main(
         
 
     # optimizer
+    
     optimizer_kwargs = variant["optimizer_kwargs"]
     optimizer_kwargs["iter_max"] = len(train_loader) * optimizer_kwargs["epochs"]
+    if pre_ck is not None: 
+        optimizer_kwargs["iter_max"] = len(train_loader) * pre_epoch
     optimizer_kwargs["iter_warmup"] = 0.0
     opt_args = argparse.Namespace()
     opt_vars = vars(opt_args)
@@ -263,6 +266,11 @@ def main(
     optimizer = create_optimizer(opt_args, model)
 
     lr_scheduler = create_scheduler(opt_args, optimizer)
+    if pre_ck is not None: 
+        opt_vars["iter_max"] = len(train_loader) * (optimizer_kwargs["epochs"] - pre_epoch)
+    lr_scheduler_2 = create_scheduler(opt_args, optimizer)
+
+    
     num_iterations = 0
     amp_autocast = suppress
     loss_scaler = None
@@ -349,6 +357,7 @@ def main(
 
         if pre_epoch > 0:
             if epoch == pre_epoch:
+                lr_scheduler = lr_scheduler_2
                 model_dict = model.state_dict()
                 model_dict = load_part(model_dict, random_dict, "uncertainty")
                 # for k, v in model_dict.items():
