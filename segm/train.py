@@ -7,6 +7,7 @@ import torch
 import click
 import argparse
 from torch.nn.parallel import DistributedDataParallel as DDP
+import copy
 
 from segm.utils import distributed
 import segm.utils.torch as ptu
@@ -240,7 +241,7 @@ def main(
     if pre_ck is not None:  
         assert (pre_epoch > 0)  & (pre_epoch >= ft)
         model_dict = model.state_dict()
-        random_dict = model.state_dict()
+        random_dict = copy.deepcopy(model.state_dict())
         checkpoint_mask = torch.load(pre_ck, map_location=ptu.device)['model']
 
         model_dict = load_part(model_dict, checkpoint_mask, "backbone")
