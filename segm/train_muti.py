@@ -346,8 +346,8 @@ def main(
                 #     print("model-", name)
                 model.load_state_dict(model_dict)
 
-                if ptu.distributed:
-                    model = DDP(model, device_ids=[ptu.device], find_unused_parameters=True)
+                # if ptu.distributed:
+                #     model = DDP(model, device_ids=[ptu.device], find_unused_parameters=True)
 
                 for name, param in model.named_parameters():
                     param.requires_grad = True
