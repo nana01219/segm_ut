@@ -7,6 +7,7 @@ import torch
 import click
 import argparse
 from torch.nn.parallel import DistributedDataParallel as DDP
+import torch.multiprocessing as mp
 import copy
 
 from segm.utils import distributed
@@ -58,35 +59,11 @@ def load_part(model_dict, checkpoint, part):
         raise Exception("Uncertainty: Model do not have such parts")
 
 
-@click.command(help="")
-@click.option("--log-dir", type=str, help="logging directory")
-@click.option("--dataset", type=str)
-@click.option("--im-size", default=None, type=int, help="dataset resize size")
-@click.option("--crop-size", default=None, type=int)
-@click.option("--window-size", default=None, type=int)
-@click.option("--window-stride", default=None, type=int)
-@click.option("--backbone", default="", type=str)
-@click.option("--decoder", default="", type=str)
-@click.option("--optimizer", default="sgd", type=str)
-@click.option("--scheduler", default="polynomial", type=str)
-@click.option("--weight-decay", default=0.0, type=float)
-@click.option("--dropout", default=0.0, type=float)
-@click.option("--drop-path", default=0.1, type=float)
-@click.option("--batch-size", default=None, type=int)
-@click.option("--epochs", default=None, type=int)
-@click.option("-lr", "--learning-rate", default=None, type=float)
-@click.option("--normalization", default=None, type=str)
-@click.option("--eval-freq", default=None, type=int)
-@click.option("--ut", default=None, type=int, help="-1 each 0 no uncertainty 1 uncertainty >1 repeat number")
-@click.option("--ug", default=0, type=int, help="if >0, from epoch ug the model will use 0-1 gate; but ug = 0 always don't use")
-@click.option("--ft", default=-1, type=int, help="if >0, from epoch ft the model will fix uncertainty module")
-@click.option("--pre_ck", default=None, type=str)
-@click.option("--pre_epoch", default=0, type=int)
-@click.option("--amp/--no-amp", default=False, is_flag=True)
-@click.option("--resume/--no-resume", default=True, is_flag=True)
+
                 
 
 def main(
+    local_rank,
     log_dir,
     dataset,
     im_size,
@@ -114,6 +91,8 @@ def main(
     resume,
 ):
     # start distributed mode
+    ptu.local_rank = local_rank
+    ptu.dist_rank = local_rank
     ptu.set_gpu_mode(True)
     distributed.init_process()
 
@@ -372,6 +351,7 @@ def main(
 
                 for name, param in model.named_parameters():
                     param.requires_grad = True
+                
                 # print("***")
 
         # train for one epoch
@@ -441,6 +421,90 @@ def main(
     distributed.destroy_process()
     sys.exit(1)
 
+@click.command(help="")
+@click.option("--log-dir", type=str, help="logging directory")
+@click.option("--dataset", type=str)
+@click.option("--im-size", default=None, type=int, help="dataset resize size")
+@click.option("--crop-size", default=None, type=int)
+@click.option("--window-size", default=None, type=int)
+@click.option("--window-stride", default=None, type=int)
+@click.option("--backbone", default="", type=str)
+@click.option("--decoder", default="", type=str)
+@click.option("--optimizer", default="sgd", type=str)
+@click.option("--scheduler", default="polynomial", type=str)
+@click.option("--weight-decay", default=0.0, type=float)
+@click.option("--dropout", default=0.0, type=float)
+@click.option("--drop-path", default=0.1, type=float)
+@click.option("--batch-size", default=None, type=int)
+@click.option("--epochs", default=None, type=int)
+@click.option("-lr", "--learning-rate", default=None, type=float)
+@click.option("--normalization", default=None, type=str)
+@click.option("--eval-freq", default=None, type=int)
+@click.option("--ut", default=None, type=int, help="-1 each 0 no uncertainty 1 uncertainty >1 repeat number")
+@click.option("--ug", default=0, type=int, help="if >0, from epoch ug the model will use 0-1 gate; but ug = 0 always don't use")
+@click.option("--ft", default=-1, type=int, help="if >0, from epoch ft the model will fix uncertainty module")
+@click.option("--pre_ck", default=None, type=str)
+@click.option("--pre_epoch", default=0, type=int)
+@click.option("--amp/--no-amp", default=False, is_flag=True)
+@click.option("--resume/--no-resume", default=True, is_flag=True)
 
-if __name__ == "__main__":
-    main()
+def muti(
+    log_dir,
+    dataset,
+    im_size,
+    crop_size,
+    window_size,
+    window_stride,
+    backbone,
+    decoder,
+    optimizer,
+    scheduler,
+    weight_decay,
+    dropout,
+    drop_path,
+    batch_size,
+    epochs,
+    learning_rate,
+    normalization,
+    eval_freq,
+    ut,
+    ug,
+    ft,
+    pre_ck,
+    pre_epoch,
+    amp,
+    resume,
+):
+    mp.spawn(main,
+        args=(log_dir,
+            dataset,
+            im_size,
+            crop_size,
+            window_size,
+            window_stride,
+            backbone,
+            decoder,
+            optimizer,
+            scheduler,
+            weight_decay,
+            dropout,
+            drop_path,
+            batch_size,
+            epochs,
+            learning_rate,
+            normalization,
+            eval_freq,
+            ut,
+            ug,
+            ft,
+            pre_ck,
+            pre_epoch,
+            amp,
+            resume,
+        ),
+        nprocs=ptu.world_size,
+        join=True)
+
+
+if __name__ == "__main__":  
+    muti()

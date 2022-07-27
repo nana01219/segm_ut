@@ -5,6 +5,7 @@ import torch
 import torch.distributed as dist
 
 import segm.utils.torch as ptu
+from datetime import timedelta
 
 
 def init_process(backend="nccl"):
@@ -26,6 +27,7 @@ def init_process(backend="nccl"):
         backend,
         rank=ptu.dist_rank,
         world_size=ptu.world_size,
+        timeout=timedelta(seconds=10)
     )
     print(f"Process {ptu.dist_rank} is connected.", flush=True)
     dist.barrier()
