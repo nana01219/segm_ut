@@ -5,8 +5,10 @@
 修改了多卡训练的代码，现在可以用一个命令执行单机多卡训练
 
 下面以2张卡为例
-1.首先修改utils/torch.py中的world_size参数，令其等于2
-2.执行下列代码即可；注意现在训练用的是segm.train_muti；如果要回到单卡训练，改回segm.train即可
+
+（1）首先修改utils/torch.py中的world_size参数，令其等于2
+
+（2）执行下列代码即可；注意现在训练用的是segm.train_muti；如果要回到单卡训练，改回segm.train即可
 
 实验1
 CUDA_VISIBLE_DEVICES=2,3 python -m segm.train_muti --log-dir base_ug0_ft24_pe24_e88_muti  --dataset ade20k   \
