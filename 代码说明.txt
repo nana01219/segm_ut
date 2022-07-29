@@ -1,6 +1,15 @@
 # segm_ut
 
-代码说明 0727
+代码说明 0729-----------------------------------------------------------------------------------------
+多卡训练之前fix的代码
+
+CUDA_VISIBLE_DEVICES=0,1,2,3 python -m segm.train_muti --log-dir base_ug-1_ft24_e64_muti  --dataset ade20k   \
+    --backbone vit_base_patch16_384 --decoder mask_transformer --ut 1 --ug -1 --ft 24 
+
+运行后每个epoch应提醒Always use gate
+
+
+代码说明 0727-----------------------------------------------------------------------------------------
 
 修改了多卡训练的代码，现在可以用一个命令执行单机多卡训练
 
@@ -22,7 +31,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 python -m segm.train_muti --log-dir base_ug24_ft24_
 
 
 
-代码说明 0724
+代码说明 0724-----------------------------------------------------------------------------------
 
 实验具体实现：
 1.	加载论文预训练好的模型，固定backbone，去训练uncertainty模块，

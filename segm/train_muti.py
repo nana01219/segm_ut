@@ -319,7 +319,10 @@ def main(
                     if "uncertainty" in name:
                         param.requires_grad = False
                         print("******Uncertainty layer now requires_grad = False")"""
-        if ug == 0:
+        if ug == -1:
+            print("***Warning: Always use gate")
+            use_gate = True 
+        elif ug == 0:
             use_gate = False
         elif ug > 0:
             if epoch > ug:

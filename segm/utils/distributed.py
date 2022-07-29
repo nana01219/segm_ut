@@ -15,6 +15,7 @@ def init_process(backend="nccl"):
         gpu_ids = os.environ["SLURM_STEP_GPUS"].split(",")
         os.environ["MASTER_PORT"] = str(12345 + int(min(gpu_ids)))
     else:
+        print("---> NO SLURM")
         os.environ["MASTER_PORT"] = str(12341)
 
     if "SLURM_JOB_NODELIST" in os.environ:
