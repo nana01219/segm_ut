@@ -1,5 +1,15 @@
 # segm_ut
 
+
+代码说明 0730-----------------------------------------------------------------------------------------
+此前eval时有一点bug的实验，这两个实验在小模型上都有提升
+
+CUDA_VISIBLE_DEVICES=0,1,2,3 python -m segm.train_muti --log-dir base_ug24_ft24_e64_muti  --dataset ade20k   \
+    --backbone vit_base_patch16_384 --decoder mask_transformer --ut 1 --ug 24 --ft 24 
+
+CUDA_VISIBLE_DEVICES=0,1,2,3 python -m segm.train_muti --log-dir base_ug0_ft24_e64_muti  --dataset ade20k   \
+    --backbone vit_base_patch16_384 --decoder mask_transformer --ut 1 --ft 24 
+
 代码说明 0729-----------------------------------------------------------------------------------------
 多卡训练之前fix的代码
 
