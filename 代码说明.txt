@@ -1,5 +1,15 @@
 # segm_ut
 
+代码说明 0801-----------------------------------------------------------------------------------------
+梯度无法回传的代码
+
+需要下载large的vit模型（见模型地址.txt）
+
+CUDA_VISIBLE_DEVICES=0,1,2,3 python -m segm.train_muti --log-dir large_ug-1_ft24_e64_muti  --dataset ade20k   \
+    --backbone vit_large_patch16_384 --decoder mask_transformer --ut 1 --ug -1 --ft 24 
+
+运行后每个epoch应提醒Always use gate
+
 
 代码说明 0730-----------------------------------------------------------------------------------------
 此前eval时有一点bug的实验，这两个实验在小模型上都有提升
