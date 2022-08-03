@@ -34,7 +34,6 @@ class PatchEmbedding(nn.Module):
         x = self.proj(im).flatten(2).transpose(1, 2)
         return x
 
-
 class VisionTransformer(nn.Module):
     def __init__(
         self,
@@ -289,12 +288,12 @@ class VisionTransformer_uncertainty(nn.Module):
         for blk in self.blocks:
             x = blk(x)
         for blk2 in self.block_data:
-            x = blk2(x, use_gate = use_gate)
+            x, attn_mean, uncertainty = blk2(x, return_attention = True, use_gate = use_gate)
 
         x = self.norm(x)
 
         if return_features:
-            return x
+            return x, attn_mean, uncertainty
 
         if self.distilled:
             x, x_dist = x[:, 0], x[:, 1]
@@ -304,7 +303,7 @@ class VisionTransformer_uncertainty(nn.Module):
         else:
             x = x[:, 0]
             x = self.head(x)
-        return x
+        return x, attn_mean, uncertainty
 
     def get_attention_map(self, im, layer_id):
         if layer_id >= self.n_layers or layer_id < 0:

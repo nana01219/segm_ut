@@ -182,8 +182,7 @@ class Attention_data(nn.Module):
 
         else:
             attn = qk * self.scale
-            attn = attn.softmax(dim=-1)
-            attn = self.attn_drop(attn)
+            attn_mean = attn.softmax(dim=-1)
 
             uncertainty = self.data_uncertainty(qk)   # -inf, inf
             uncertainty = self.norm_uncertainty(uncertainty)  # 0, 1
@@ -192,17 +191,18 @@ class Attention_data(nn.Module):
                 a, b, c, d = uncertainty.shape
                 r = torch.rand([a, b, c, d]).to(uncertainty)
                 mask = (r>uncertainty)
-                attn = attn*mask
+                attn = attn_mean*mask
             else:
                 # attn = attn*uncertainty
                 r = torch.randn_like(uncertainty).to(uncertainty)
-                attn = attn + uncertainty*r
+                attn = attn_mean + uncertainty*r
 
+            attn = self.attn_drop(attn)
             x = (attn @ v).transpose(1, 2).reshape(B, N, C)
             x = self.proj(x)
             x = self.proj_drop(x)
 
-            return x, attn
+            return x, attn_mean, uncertainty
 
 class Attention_Stage_2(nn.Module):
     def __init__(self, dim, heads, dropout, repeat_num):
@@ -344,11 +344,11 @@ class Block_data(nn.Module):
             return x_list
 
         else:
-            y, attn = self.attn(self.norm1(x), mask, use_gate = use_gate)
-            if return_attention:
-                return attn
+            y, attn, ut = self.attn(self.norm1(x), mask, use_gate = use_gate)
             x = x + self.drop_path(y)
             x = x + self.drop_path(self.mlp(self.norm2(x)))
+            if return_attention:
+                return x, attn, ut
             return x
 
 class Block_stage_2(nn.Module):

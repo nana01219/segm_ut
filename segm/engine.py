@@ -7,6 +7,10 @@ from segm.model import utils
 from segm.data.utils import IGNORE_LABEL
 import segm.utils.torch as ptu
 
+def uncertainty_norm_loss(attn, ut, sigma = 1):
+    loss = torch.log(sigma/ut) + (ut**2 + attn**2)/(2*(sigma**2)) -1/2
+    return loss.mean()
+
 
 def train_one_epoch(
     model,
@@ -16,7 +20,8 @@ def train_one_epoch(
     epoch,
     amp_autocast,
     loss_scaler,
-    use_gate = True,
+    use_gate,
+    use_norm = False,
 ):
     criterion = torch.nn.CrossEntropyLoss(ignore_index=IGNORE_LABEL)
     logger = MetricLogger(delimiter="  ")
@@ -31,8 +36,11 @@ def train_one_epoch(
         seg_gt = batch["segmentation"].long().to(ptu.device)
 
         with amp_autocast():
-            seg_pred = model.forward(im, use_gate = use_gate)
+            seg_pred, attn_mean, ut = model.forward(im, use_gate = use_gate)
             loss = criterion(seg_pred, seg_gt)
+            if use_norm and (not use_gate):
+                loss2 = uncertainty_norm_loss(attn_mean, ut)
+                loss = loss + loss2
 
         loss_value = loss.item()
         if not math.isfinite(loss_value):

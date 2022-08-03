@@ -36,7 +36,7 @@ class Segmenter(nn.Module):
         im = padding(im, self.patch_size)
         H, W = im.size(2), im.size(3)
 
-        x = self.encoder(im, return_features=True, use_gate = use_gate)
+        x, attn_mean, uncertainty = self.encoder(im, return_features=True, use_gate = use_gate)
         # print(type(x))
         
 
@@ -75,7 +75,7 @@ class Segmenter(nn.Module):
             masks = F.interpolate(masks, size=(H, W), mode="bilinear")
             masks = unpadding(masks, (H_ori, W_ori))
 
-            return masks
+            return masks, attn_mean, uncertainty
 
     def get_attention_map_enc(self, im, layer_id):
         return self.encoder.get_attention_map(im, layer_id)
