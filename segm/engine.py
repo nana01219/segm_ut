@@ -38,8 +38,8 @@ def train_one_epoch(
         with amp_autocast():
             seg_pred, attn_mean, ut = model.forward(im, use_gate = use_gate)
             loss = criterion(seg_pred, seg_gt)
-            if use_norm and (not use_gate):
-                loss2 = uncertainty_norm_loss(attn_mean, ut)
+            if (use_norm > 0) and (not use_gate):
+                loss2 = uncertainty_norm_loss(attn_mean, ut, use_norm)
                 loss = loss + loss2
 
         loss_value = loss.item()

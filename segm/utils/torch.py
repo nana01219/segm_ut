@@ -20,7 +20,7 @@ device = None
 
 distributed = False
 dist_rank = 0
-world_size = 2
+world_size = 4
 
 
 def set_gpu_mode(mode):

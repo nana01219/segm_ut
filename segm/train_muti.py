@@ -358,8 +358,8 @@ def main(
                 
                 # print("***")
 
-        if use_norm:
-            norm_flag = not use_gate
+        # if use_norm:
+        #     norm_flag = not use_gate
 
         # train for one epoch
         train_logger = train_one_epoch(
@@ -371,7 +371,7 @@ def main(
             amp_autocast,
             loss_scaler,
             use_gate = use_gate,
-            use_norm = norm_flag,
+            use_norm = use_norm,
         )
 
         # save checkpoint
@@ -451,7 +451,7 @@ def main(
 @click.option("--ut", default=None, type=int, help="-1 each 0 no uncertainty 1 uncertainty >1 repeat number")
 @click.option("--ug", default=0, type=int, help="if >0, from epoch ug the model will use 0-1 gate; but ug = 0 always don't use")
 @click.option("--ft", default=-1, type=int, help="if >0, from epoch ft the model will fix uncertainty module")
-@click.option("--use_norm/--not_use_norm", default=False, is_flag=True)
+@click.option("--use_norm", default=-1, type=float)
 @click.option("--pre_ck", default=None, type=str)
 @click.option("--pre_epoch", default=0, type=int)
 @click.option("--amp/--no-amp", default=False, is_flag=True)
