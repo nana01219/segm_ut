@@ -1,5 +1,15 @@
 # segm_ut
 
+
+代码说明 0810-----------------------------------------------------------------------------------------
+带有正则项loss的代码
+
+修改--use_norm 以修改正则项的参数。这一项的意义是预设的先验分布的方差，学到的uncertainty会接近这个值
+
+CUDA_VISIBLE_DEVICES=0,1,2,3 python -m segm.train_muti --log-dir base_ug24_ft24_e64_usenorm0.5  --dataset ade20k   \
+    --backbone vit_base_patch16_384 --decoder mask_transformer --ut 1 --ug 24 --ft 24 --use_norm 0.5
+
+
 代码说明 0801-----------------------------------------------------------------------------------------
 梯度无法回传的代码
 
