@@ -1,5 +1,13 @@
 # segm_ut
 
+代码说明 0817-----------------------------------------------------------------------------------------
+针对uncertainty本身的正则项
+
+注意：修改--usenorm以修改先验分布。格式为“均值/方差”，均值<0时，不使用正则项
+
+CUDA_VISIBLE_DEVICES=0,1,2,3 python -m segm.train_muti --log-dir base_ug24_ft24_e64_usenorm0.5-0.015  --dataset ade20k   \
+    --backbone vit_base_patch16_384 --decoder mask_transformer --ut 1 --ug 24 --ft 24 --use_norm 0.5/0.015
+
 
 代码说明 0810-----------------------------------------------------------------------------------------
 带有正则项loss的代码

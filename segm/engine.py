@@ -7,9 +7,12 @@ from segm.model import utils
 from segm.data.utils import IGNORE_LABEL
 import segm.utils.torch as ptu
 
-def uncertainty_norm_loss(attn, ut, sigma = 1):
-    loss = torch.log(sigma/ut) + (ut**2 + attn**2)/(2*(sigma**2)) -1/2
-    return loss.mean()
+def uncertainty_norm_loss(ut, norm_mean, norm_var):
+    # loss = torch.log(sigma/ut) + (ut**2 + attn**2)/(2*(sigma**2)) -1/2
+    ut_mean = ut.mean()
+    ut_var = ut.var()
+    loss = 0.5*(torch.log(norm_var) - torch.log(ut_var) + (ut_var+(ut_mean-norm_mean)**2)/norm_var - 1)
+    return loss
 
 
 def train_one_epoch(
@@ -28,6 +31,12 @@ def train_one_epoch(
     header = f"Epoch: [{epoch}]"
     print_freq = 100
 
+    norm_mean, norm_var = use_norm.split('/')
+    norm_mean = torch.tensor(float(norm_mean))
+    norm_var = torch.tensor(float(norm_var))
+    # print("---", norm_mean, norm_var)
+
+
     model.train()
     data_loader.set_epoch(epoch)
     num_updates = epoch * len(data_loader)
@@ -38,8 +47,8 @@ def train_one_epoch(
         with amp_autocast():
             seg_pred, attn_mean, ut = model.forward(im, use_gate = use_gate)
             loss = criterion(seg_pred, seg_gt)
-            if (use_norm > 0) and (not use_gate):
-                loss2 = uncertainty_norm_loss(attn_mean, ut, use_norm)
+            if (norm_mean > 0) and (not use_gate):
+                loss2 = uncertainty_norm_loss(ut, norm_mean, norm_var)
                 loss = loss + loss2
 
         loss_value = loss.item()
