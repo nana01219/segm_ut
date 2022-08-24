@@ -121,7 +121,7 @@ def create_vit_each(model_cfg, with_ut = False):
 
     return model
 
-def create_vit_uncertainty(model_cfg, repeat_num = None):
+def create_vit_uncertainty(model_cfg, block_type, repeat_num = None):
     model_cfg = model_cfg.copy()
     backbone = model_cfg.pop("backbone")
 
@@ -150,7 +150,7 @@ def create_vit_uncertainty(model_cfg, repeat_num = None):
     if repeat_num is not None:
         model = VisionTransformer_ut_10(**model_cfg, repeat_num = repeat_num)
     else:
-        model = VisionTransformer_uncertainty(**model_cfg)
+        model = VisionTransformer_uncertainty(**model_cfg, block_type=block_type)
     if backbone == "vit_base_patch8_384":
         path = os.path.expandvars("$TORCH_HOME/hub/checkpoints/vit_base_patch8_384.pth")
         state_dict = torch.load(path, map_location="cpu")
@@ -206,12 +206,12 @@ def create_segmenter_each(model_cfg, with_ut = False):
 
     return model
 
-def create_segmenter_uncertainty(model_cfg):
+def create_segmenter_uncertainty(model_cfg, block_type):
     model_cfg = model_cfg.copy()
     decoder_cfg = model_cfg.pop("decoder")
     decoder_cfg["n_cls"] = model_cfg["n_cls"]
 
-    encoder = create_vit_uncertainty(model_cfg)
+    encoder = create_vit_uncertainty(model_cfg, block_type = block_type)
     decoder = create_decoder(encoder, decoder_cfg)
     model = Segmenter(encoder, decoder, n_cls=model_cfg["n_cls"])
 

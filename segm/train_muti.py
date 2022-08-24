@@ -207,7 +207,9 @@ def main(
         model = create_segmenter_each(net_kwargs)
         # model = create_segmenter(net_kwargs, with_ut = True)
     elif ut == 1:
-        model = create_segmenter_uncertainty(net_kwargs)
+        model = create_segmenter_uncertainty(net_kwargs, block_type="block_data")
+    elif ut == 11:
+        model = create_segmenter_uncertainty(net_kwargs, block_type="block_dropout")
     elif ut <= 10 and ut > 1:
         model = create_segmenter_ut_10(net_kwargs, repeat_num=ut)
 

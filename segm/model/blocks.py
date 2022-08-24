@@ -204,6 +204,64 @@ class Attention_data(nn.Module):
 
             return x, attn_mean, uncertainty
 
+class Attention_drop_out(nn.Module):
+    def __init__(self, dim, heads, dropout, repeat_num, act = "sigmoid"):
+        super().__init__()
+        self.heads = heads
+        head_dim = dim // heads
+        self.scale = head_dim ** -0.5
+        self.attn = None
+
+        self.qkv = nn.Linear(dim, dim * 3)
+        # self.attn_drop = nn.Dropout(dropout)
+        self.proj = nn.Linear(dim, dim)
+        self.proj_drop = nn.Dropout(dropout)
+        self.attn_drop = nn.Dropout(0.5)
+        self.data_uncertainty = nn.Conv2d(heads, heads, kernel_size = 1, stride=1)
+        self.repeat_num = repeat_num
+
+
+        if act == "sigmoid":
+            self.act = nn.Sigmoid()
+        # elif act == "logexp":
+
+        if repeat_num is not None:
+            print("UNCERTAINTY: The uncertainty block will process for ", repeat_num, " times")
+
+        print("Warning: This is directly dropout block")
+
+    @property
+    def unwrapped(self):
+        return self
+
+    def forward(self, x, mask=None, use_gate = False):
+        B, N, C = x.shape
+        qkv = (
+            self.qkv(x)
+            .reshape(B, N, 3, self.heads, C // self.heads)
+            .permute(2, 0, 3, 1, 4)
+        )
+        q, k, v = (
+            qkv[0],
+            qkv[1],
+            qkv[2],
+        )
+
+        
+        qk = (q @ k.transpose(-2, -1)) 
+
+        if self.repeat_num is not None:
+            pass
+        else:
+            attn = qk * self.scale
+            attn_mean = attn.softmax(dim=-1)
+            attn = self.attn_drop(attn)
+            x = (attn @ v).transpose(1, 2).reshape(B, N, C)
+            x = self.proj(x)
+            x = self.proj_drop(x)
+
+            return x, attn_mean, None
+
 class Attention_Stage_2(nn.Module):
     def __init__(self, dim, heads, dropout, repeat_num):
         super().__init__()
@@ -322,12 +380,17 @@ class Block(nn.Module):
         return x
 
 class Block_data(nn.Module):
-    def __init__(self, dim, heads, mlp_dim, dropout, drop_path, repeat_num = None):
+    def __init__(self, dim, heads, mlp_dim, dropout, drop_path, block_type, repeat_num = None):
         super().__init__()
         self.repeat_num = repeat_num
         self.norm1 = nn.LayerNorm(dim)
         self.norm2 = nn.LayerNorm(dim)
-        self.attn = Attention_data(dim, heads, dropout, repeat_num)
+        if block_type == "block_data":
+            self.attn = Attention_data(dim, heads, dropout, repeat_num)
+        elif block_type == "block_dropout":
+            self.attn = Attention_drop_out(dim, heads, dropout, repeat_num)
+        else:
+            raise Exception("The attention block not implement")
         self.mlp = FeedForward(dim, mlp_dim, dropout)
         self.drop_path = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
 

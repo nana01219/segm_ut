@@ -201,6 +201,7 @@ class VisionTransformer_uncertainty(nn.Module):
         drop_path_rate=0.0,
         distilled=False,
         channels=3,
+        block_type = "block_data",
     ):
         super().__init__()
         self.patch_embed = PatchEmbedding(
@@ -238,7 +239,7 @@ class VisionTransformer_uncertainty(nn.Module):
             [Block(d_model, n_heads, d_ff, dropout, dpr[i]) for i in range(n_layers-1)]
         )
         self.block_data = nn.ModuleList(
-            [Block_data(d_model, n_heads, d_ff, dropout, dpr[n_layers-1])]
+            [Block_data(d_model, n_heads, d_ff, dropout, dpr[n_layers-1], block_type)]
         )
 
         # output head
