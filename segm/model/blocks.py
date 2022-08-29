@@ -204,6 +204,77 @@ class Attention_data(nn.Module):
 
             return x, attn_mean, uncertainty
 
+class Attention_relu(nn.Module):
+    def __init__(self, dim, heads, dropout, repeat_num, act = "sigmoid"):
+        super().__init__()
+        self.heads = heads
+        head_dim = dim // heads
+        self.scale = head_dim ** -0.5
+        self.attn = None
+
+        self.qkv = nn.Linear(dim, dim * 3)
+        self.attn_drop = nn.Dropout(dropout)
+        self.proj = nn.Linear(dim, dim)
+        self.proj_drop = nn.Dropout(dropout)
+        # self.data_uncertainty = nn.Conv2d(heads, heads, kernel_size = 1, stride=1)
+        self.repeat_num = repeat_num
+
+        if act == "sigmoid":
+            self.act = nn.Sigmoid()
+        # elif act == "logexp":
+
+        if repeat_num is not None:
+            print("UNCERTAINTY: The uncertainty block will process for ", repeat_num, " times")
+
+    def norm_uncertainty(self, uncertainty):
+        # uncertainty = torch.log(torch.exp(uncertainty))
+        # uncertainty = (torch.tanh(uncertainty) + 1)/2
+        uncertainty = self.act(uncertainty)
+        return uncertainty
+
+    @property
+    def unwrapped(self):
+        return self
+
+    def forward(self, x, mask=None, use_gate = False):
+        B, N, C = x.shape
+        qkv = (
+            self.qkv(x)
+            .reshape(B, N, 3, self.heads, C // self.heads)
+            .permute(2, 0, 3, 1, 4)
+        )
+        q, k, v = (
+            qkv[0],
+            qkv[1],
+            qkv[2],
+        )
+
+        
+        qk = (q @ k.transpose(-2, -1)) 
+
+        attn = qk * self.scale
+        attn_mean = attn.softmax(dim=-1)
+
+        # uncertainty = self.data_uncertainty(qk)   # -inf, inf
+        uncertainty = self.norm_uncertainty(qk)  # 0, 1
+
+        if use_gate:
+            a, b, c, d = uncertainty.shape
+            r = torch.rand([a, b, c, d]).to(uncertainty)
+            mask = (r>uncertainty)
+            attn = attn_mean*mask
+        else:
+            # attn = attn*uncertainty
+            r = torch.randn_like(uncertainty).to(uncertainty)
+            attn = attn_mean + uncertainty*r
+
+        attn = self.attn_drop(attn)
+        x = (attn @ v).transpose(1, 2).reshape(B, N, C)
+        x = self.proj(x)
+        x = self.proj_drop(x)
+
+        return x, attn_mean, uncertainty
+
 class Attention_drop_out(nn.Module):
     def __init__(self, dim, heads, dropout, repeat_num, act = "sigmoid"):
         super().__init__()
@@ -389,6 +460,8 @@ class Block_data(nn.Module):
             self.attn = Attention_data(dim, heads, dropout, repeat_num)
         elif block_type == "block_dropout":
             self.attn = Attention_drop_out(dim, heads, dropout, repeat_num)
+        elif block_type == "block_relu":
+            self.attn = Attention_relu(dim, heads, dropout, repeat_num)   
         else:
             raise Exception("The attention block not implement")
         self.mlp = FeedForward(dim, mlp_dim, dropout)
