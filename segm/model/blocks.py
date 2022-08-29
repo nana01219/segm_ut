@@ -533,7 +533,7 @@ class Block_data(nn.Module):
             self.attn = Attention_drop_out(dim, heads, dropout, repeat_num)
         elif block_type == "block_relu":
             self.attn = Attention_relu(dim, heads, dropout, repeat_num) 
-        elif block_type == "block_relu":
+        elif block_type == "block_tanh":
             self.attn = Attention_tanh(dim, heads, dropout, repeat_num)    
         else:
             raise Exception("The attention block not implement")
