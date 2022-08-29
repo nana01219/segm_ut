@@ -83,6 +83,7 @@ def main(
     normalization,
     eval_freq,
     ut,
+    ut_name,
     ug,
     ft,
     use_norm,
@@ -207,9 +208,7 @@ def main(
         model = create_segmenter_each(net_kwargs)
         # model = create_segmenter(net_kwargs, with_ut = True)
     elif ut == 1:
-        model = create_segmenter_uncertainty(net_kwargs, block_type="block_data")
-    elif ut == 11:
-        model = create_segmenter_uncertainty(net_kwargs, block_type="block_dropout")
+        model = create_segmenter_uncertainty(net_kwargs, block_type=ut_name)
     elif ut <= 10 and ut > 1:
         model = create_segmenter_ut_10(net_kwargs, repeat_num=ut)
 
@@ -451,6 +450,7 @@ def main(
 @click.option("--normalization", default=None, type=str)
 @click.option("--eval-freq", default=None, type=int)
 @click.option("--ut", default=None, type=int, help="-1 each 0 no uncertainty 1 uncertainty >1 repeat number")
+@click.option("--ut_name", default="block_data", type=str, help="name of uncertainty block")
 @click.option("--ug", default=0, type=int, help="if >0, from epoch ug the model will use 0-1 gate; but ug = 0 always don't use")
 @click.option("--ft", default=-1, type=int, help="if >0, from epoch ft the model will fix uncertainty module")
 @click.option("--use_norm", default="-1/0.015", type=str)
@@ -479,6 +479,7 @@ def muti(
     normalization,
     eval_freq,
     ut,
+    ut_name,
     ug,
     ft,
     use_norm,
@@ -507,6 +508,7 @@ def muti(
             normalization,
             eval_freq,
             ut,
+            ut_name,
             ug,
             ft,
             use_norm,
