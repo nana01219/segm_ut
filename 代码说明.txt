@@ -1,5 +1,17 @@
 # segm_ut
 
+代码说明 0831-----------------------------------------------------------------------------------------
+使用gumbel_softmax来生成mask
+
+实验1 从24epoch开始，固定uncertainty分支
+CUDA_VISIBLE_DEVICES=0,1,2,3 python -m segm.train_muti --log-dir base_ug24_ft24_e64_gumbel  --dataset ade20k   \
+    --backbone vit_base_patch16_384 --decoder mask_transformer --ut 1 --ut_name block_gumbel --ug 24 --ft 24 
+
+实验2 uncertainty分支全程参与训练
+CUDA_VISIBLE_DEVICES=0,1,2,3 python -m segm.train_muti --log-dir base_ug24_e64_gumbel  --dataset ade20k   \
+    --backbone vit_base_patch16_384 --decoder mask_transformer --ut 1 --ut_name block_gumbel --ug 24 
+
+
 代码说明 0829-----------------------------------------------------------------------------------------
 删去预测uncertainty的网络，直接对前级的输出进行归一化
 
