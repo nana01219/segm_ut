@@ -229,7 +229,7 @@ def create_segmenter_ut_10(model_cfg, repeat_num = None):
     return model
 
 
-def load_model(model_path, ut = 0):
+def load_model(model_path, ut = 0, block_type="block_data"):
     variant_path = Path(model_path).parent / "variant.yml"
     with open(variant_path, "r") as f:
         variant = yaml.load(f, Loader=yaml.FullLoader)
@@ -238,7 +238,7 @@ def load_model(model_path, ut = 0):
     if ut == 0:
         model = create_segmenter(net_kwargs)
     else:
-        model = create_segmenter_uncertainty(net_kwargs)
+        model = create_segmenter_uncertainty(net_kwargs, block_type)
     data = torch.load(model_path, map_location=ptu.device)
     checkpoint = data["model"]
 

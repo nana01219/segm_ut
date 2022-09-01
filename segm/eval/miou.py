@@ -227,6 +227,7 @@ def eval_dataset(
 @click.option("--save-images/--no-save-images", default=False, is_flag=True)
 @click.option("-frac-dataset", "--frac-dataset", default=1.0, type=float)
 @click.option("--ut", default=0, type=int)
+@click.option("--ut_name", default="block_data", type=str, help="name of uncertainty block")
 @click.option("--ug/--not-ug", default=True, is_flag=True)
 
 def main(
@@ -241,6 +242,7 @@ def main(
     save_images,
     frac_dataset,
     ut,
+    ut_name,
     ug,
 ):
 
@@ -250,7 +252,7 @@ def main(
     ptu.set_gpu_mode(True)
     distributed.init_process()
 
-    model, variant = load_model(model_path, ut =1)
+    model, variant = load_model(model_path, ut =1, block_type=ut_name)
     patch_size = model.patch_size
     model.eval()
     model.to(ptu.device)

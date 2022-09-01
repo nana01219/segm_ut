@@ -533,10 +533,12 @@ class Attention_gumbel(nn.Module):
         return uncertainty
 
     def get_gumbel_mask(self, x, hard):
-        y = 1 - x
+        # get tensor [B, C, Hh, Ww, 2]
+        y = 1-x  
         x = torch.cat([x.unsqueeze(-1), y.unsqueeze(-1)], dim=-1)
+        # gumbel softmax on last dim
         z = F.gumbel_softmax(x, dim=-1, hard=hard)
-        z = z[:, :, :, :, 0]
+        z = z[:, :, :, :, 1]
         return z
 
     @property
